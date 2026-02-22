@@ -1,0 +1,24 @@
+{
+  "name": "tmfarrell-blog-search-api",
+  "version": "1.0.0",
+  "description": "Standalone Netlify Functions for semantic search API",
+  "main": "functions/search.js",
+  "scripts": {
+    "test": "node test-local.js"
+  },
+  "dependencies": {
+    "@pinecone-database/pinecone": "^7.1.0",
+    "dotenv": "^17.3.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "netlify-functions",
+    "search",
+    "pinecone",
+    "semantic-search"
+  ],
+  "author": "Tim Farrell",
+  "license": "MIT"
+}

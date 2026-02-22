@@ -1,0 +1,35 @@
+[build]
+  # No build step needed - just functions
+  publish = "."
+  
+[functions]
+  directory = "functions"
+  node_bundler = "esbuild"
+
+# CORS headers for all function endpoints
+[[headers]]
+  for = "/.netlify/functions/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "GET, POST, OPTIONS"
+    Access-Control-Allow-Headers = "Content-Type, Authorization"
+    Access-Control-Max-Age = "86400"
+
+# Optional: Redirect for cleaner API paths
+[[redirects]]
+  from = "/api/search"
+  to = "/.netlify/functions/search"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/test"
+  to = "/.netlify/functions/test"
+  status = 200
+  force = true
+
+# Default redirect to test endpoint for root path
+[[redirects]]
+  from = "/"
+  to = "/.netlify/functions/test"
+  status = 200
