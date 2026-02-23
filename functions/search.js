@@ -98,7 +98,7 @@ exports.handler = async (event, context) => {
     // Query Pinecone
     const searchResult = await index.namespace(process.env.PINECONE_NAMESPACE).searchRecords({
       query: {
-        topK: 3, // Return top 3 results as specified
+        topK: 5, // Return top 3 results as specified
         inputs: { text: query.trim() }
       }
     });
