@@ -115,6 +115,7 @@ exports.handler = async (event, context) => {
       const url = fields.url || '#';
       const date = fields.date || '';
       const category = fields.categories?.[0] || fields.category || '';
+      const tags = fields.tags || [];
       const excerpt = fields.content_excerpt || fields.text?.substring(0, 200) + '...' || 'No preview available';
 
       return {
@@ -122,6 +123,7 @@ exports.handler = async (event, context) => {
         url: sanitizeUrl(url),
         date: formatDate(date),
         category: formatCategory(category),
+        tags: Array.isArray(tags) ? tags : [],
         excerpt: sanitizeExcerpt(excerpt),
         score: Math.max(0, Math.min(1, hit._score || 0)) // Ensure score is between 0 and 1
       };
@@ -231,11 +233,7 @@ function formatDate(dateString) {
 function formatCategory(category) {
   if (!category) return '';
   
-  // Capitalize first letter of each word
-  return category
-    .split(' ')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join(' ');
+  return category.toLowerCase();
 }
 
 function sanitizeExcerpt(excerpt) {

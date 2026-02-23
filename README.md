@@ -2,40 +2,36 @@
 
 This is a standalone Netlify Functions deployment that provides semantic search API for tmfarrell.github.io.
 
-## Deployment Instructions
+## Local Development
 
-### 1. Create New Netlify Site from This Directory
+### Prerequisites
+
+- Node.js installed
+- Netlify CLI: `npm install -g netlify-cli`
+
+### Running Locally
 
 ```bash
-# Navigate to this directory
-cd api.tmfarrell.github.io
+# Install dependencies
+npm install
 
-# Initialize git if not already done
-git init
-git add .
-git commit -m "Initial commit - Search API functions"
-
-# Create a GitHub repository for just the functions
-# Then push this directory to that new repo
+# Start local development server
+netlify dev
 ```
 
-### 2. Connect to Netlify
+This starts a local server (typically at http://localhost:8888) where you can test the functions.
 
-1. Go to https://netlify.com
-2. Click "New site from Git"
-3. Choose GitHub and select your new functions repository
-4. Use these settings:
-   - **Base directory**: leave blank (or set to `api.tmfarrell.github.io` if you put this in a subdirectory)
-   - **Build command**: leave blank (no build needed)
-   - **Publish directory**: `.` (current directory)
+### Testing the API Locally
 
-### 4. Test Deployment
+```bash
+# Test endpoint
+curl http://localhost:8888/.netlify/functions/test
 
-After deployment, your functions will be available at:
-
-- **Test endpoint**: `https://your-functions-site.netlify.app/.netlify/functions/test`
-- **Search endpoint**: `https://your-functions-site.netlify.app/.netlify/functions/search`
-- **Clean URLs**: `https://your-functions-site.netlify.app/api/search` (via redirect)
+# Search endpoint
+curl -X POST http://localhost:8888/.netlify/functions/search \
+  -H "Content-Type: application/json" \
+  -d '{"query": "product management"}'
+```
 
 ## API Endpoints
 
@@ -43,20 +39,15 @@ After deployment, your functions will be available at:
 
 Test endpoint to verify deployment.
 
-**Example:**
-```bash
-curl https://api-tmfarrell.netlify.app/.netlify/functions/test
-```
-
 ### POST /.netlify/functions/search
 
 Semantic search endpoint.
 
 **Request:**
-```bash
-curl -X POST https://api-tmfarrell.netlify.app/.netlify/functions/search \
-  -H "Content-Type: application/json" \
-  -d '{"query": "product management"}'
+```json
+{
+  "query": "your search query"
+}
 ```
 
 **Response:**
@@ -77,36 +68,6 @@ curl -X POST https://api-tmfarrell.netlify.app/.netlify/functions/search \
 }
 ```
 
-## Integration with GitHub Pages Site
-
-Once deployed, update your GitHub Pages site to call:
-
-```javascript
-// In your frontend JavaScript
-const API_BASE_URL = 'https://your-functions-site.netlify.app';
-
-fetch(`${API_BASE_URL}/.netlify/functions/search`, {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify({ query: 'your search query' })
-})
-.then(response => response.json())
-.then(data => console.log(data.results));
-```
-
-## Local Testing
-
-```bash
-# Install dependencies
-npm install
-
-# Test the function locally (requires Netlify CLI)
-npm install -g netlify-cli
-netlify dev
-```
-
 ## Error Handling
 
 The API returns proper HTTP status codes:
@@ -116,9 +77,6 @@ The API returns proper HTTP status codes:
 - **429**: Rate limit exceeded (Pinecone quota hit)
 - **500**: Server error
 - **504**: Request timeout
-
-Rate limit message matches your specification:
-> "Too many users have been using this feature and we've hit the limit of our free-tier backend services! Please take a break and try this feature again soon, or email tfarrell01@gmail.com with any other questions you might have."
 
 ## Files
 
