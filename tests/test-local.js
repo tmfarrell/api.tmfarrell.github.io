@@ -6,8 +6,8 @@
 // Load environment variables from parent directory
 require('dotenv').config({ path: '.env' });
 
-const { handler: searchHandler } = require('./functions/search.js');
-const { handler: testHandler } = require('./functions/test.js');
+const { handler: searchHandler } = require('../functions/search.js');
+const { handler: testHandler } = require('../functions/test.js');
 
 async function testFunctions() {
   console.log('🔍 Testing Standalone Search Functions\n');

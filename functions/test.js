@@ -15,7 +15,7 @@ exports.handler = async (event, context) => {
     statusCode: 200,
     headers,
     body: JSON.stringify({
-      message: 'Search API Functions are working!',
+      message: 'api-tmfarrell.netlify.app',
       timestamp: new Date().toISOString(),
       environment: {
         hasApiKey: !!process.env.PINECONE_API_KEY,
@@ -30,7 +30,7 @@ exports.handler = async (event, context) => {
       },
       usage: {
         search_endpoint: 'POST /.netlify/functions/search with JSON body: {"query": "your search text"}',
-        example: 'curl -X POST [YOUR_NETLIFY_URL]/.netlify/functions/search -H "Content-Type: application/json" -d \'{"query": "data science"}\''
+        example: 'curl -X POST https://api-tmfarrell.netlify.app/.netlify/functions/search -H "Content-Type: application/json" -d \'{"query": "data science"}\''
       }
     })
   };
