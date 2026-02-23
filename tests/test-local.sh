@@ -8,5 +8,5 @@ echo ""
 echo "Testing search endpoint.."
 curl -X POST http://localhost:8888/.netlify/functions/search \
   -H "Content-Type: application/json" \
-  -d '{"query": "resume"}'  \
+  -d '{"query": "portfolio or resume"}'  \
     | jq . 
