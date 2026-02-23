@@ -45,7 +45,7 @@ Test endpoint to verify deployment.
 
 **Example:**
 ```bash
-curl https://your-functions-site.netlify.app/.netlify/functions/test
+curl https://api-tmfarrell.netlify.app/.netlify/functions/test
 ```
 
 ### POST /.netlify/functions/search
@@ -54,7 +54,7 @@ Semantic search endpoint.
 
 **Request:**
 ```bash
-curl -X POST https://your-functions-site.netlify.app/.netlify/functions/search \
+curl -X POST https://api-tmfarrell.netlify.app/.netlify/functions/search \
   -H "Content-Type: application/json" \
   -d '{"query": "product management"}'
 ```

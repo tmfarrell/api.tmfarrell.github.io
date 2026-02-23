@@ -91,38 +91,31 @@ exports.handler = async (event, context) => {
       apiKey: process.env.PINECONE_API_KEY
     });
     
-    const index = pinecone.index(process.env.PINECONE_INDEX);
+    const index = pinecone.index({ name: process.env.PINECONE_INDEX, host: process.env.PINECONE_INDEX_HOST});
     
     console.log(`[${new Date().toISOString()}] Searching for: "${query.trim()}"`);
     
-    // Query Pinecone with timeout
-    const searchPromise = index.namespace('default').searchRecords({
+    // Query Pinecone
+    const searchResult = await index.namespace(process.env.PINECONE_NAMESPACE).searchRecords({
       query: {
         topK: 3, // Return top 3 results as specified
         inputs: { text: query.trim() }
       }
     });
 
-    // Add timeout to prevent hanging requests
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Search request timeout')), 15000); // 15 second timeout
-    });
-
-    const searchResult = await Promise.race([searchPromise, timeoutPromise]);
-
-    console.log(`[${new Date().toISOString()}] Found ${searchResult.records?.length || 0} results`);
+    const hits = searchResult.result?.hits || [];
+    console.log(`[${new Date().toISOString()}] Found ${hits.length} results`);
 
     // Format results for frontend
-    const results = (searchResult.records || []).map(record => {
-      // Extract metadata from the record - handle both direct props and nested metadata
-      const title = record.title || record.metadata?.title || 'Untitled';
-      const url = record.permalink || record.metadata?.permalink || record.url || '#';
-      const date = record.date || record.metadata?.date || '';
-      const category = record.category || record.metadata?.category || '';
-      const excerpt = record.excerpt || record.metadata?.excerpt || 
-                     (record.content?.substring(0, 200) + '...') || 
-                     (record.text?.substring(0, 200) + '...') || 
-                     'No preview available';
+    const results = hits.map(hit => {
+      const fields = hit.fields || {};
+      
+      // Extract metadata from the hit fields
+      const title = fields.title || 'Untitled';
+      const url = fields.url || '#';
+      const date = fields.date || '';
+      const category = fields.categories?.[0] || fields.category || '';
+      const excerpt = fields.content_excerpt || fields.text?.substring(0, 200) + '...' || 'No preview available';
 
       return {
         title: sanitizeText(title),
@@ -130,7 +123,7 @@ exports.handler = async (event, context) => {
         date: formatDate(date),
         category: formatCategory(category),
         excerpt: sanitizeExcerpt(excerpt),
-        score: Math.max(0, Math.min(1, record.score || 0)) // Ensure score is between 0 and 1
+        score: Math.max(0, Math.min(1, hit._score || 0)) // Ensure score is between 0 and 1
       };
     });
 
@@ -169,18 +162,7 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Check for timeout errors
-    if (error.message?.includes('timeout')) {
-      console.log('Timeout error detected');
-      return {
-        statusCode: 504,
-        headers,
-        body: JSON.stringify({ 
-          error: 'search_timeout',
-          message: 'Search request took too long to complete. Please try again.'
-        })
-      };
-    }
+
 
     // Check for authentication errors
     if (error.message?.includes('Unauthorized') || 

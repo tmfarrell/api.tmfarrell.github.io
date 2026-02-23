@@ -1,7 +1,7 @@
 {
-  "name": "tmfarrell-blog-search-api",
+  "name": "api.tmfarrell.github.io",
   "version": "1.0.0",
-  "description": "Standalone Netlify Functions for semantic search API",
+  "description": "Standalone Netlify Functions for semantic search and agent API",
   "main": "functions/search.js",
   "scripts": {
     "test": "node test-local.js"

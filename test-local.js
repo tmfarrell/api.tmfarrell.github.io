@@ -4,7 +4,7 @@
 // Run with: node test-local.js
 
 // Load environment variables from parent directory
-require('dotenv').config({ path: '../.env' });
+require('dotenv').config({ path: '.env' });
 
 const { handler: searchHandler } = require('./functions/search.js');
 const { handler: testHandler } = require('./functions/test.js');
