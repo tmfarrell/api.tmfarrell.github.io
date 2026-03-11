@@ -248,12 +248,8 @@ function sanitizeExcerpt(excerpt) {
   const cleaned = excerpt
     .replace(/<[^>]*>/g, '') // Remove HTML tags
     .replace(/\s+/g, ' ') // Normalize whitespace
-    .replace(/[^\w\s.,!?;:-]/g, '') // Remove potentially unsafe characters
+    .replace(/[^\w\s.,!?;:\-\[\]()\/\\]/g, '') // Remove potentially unsafe characters but preserve links
     .trim();
-    
-  if (cleaned.length > 250) {
-    return cleaned.substring(0, 247) + '...';
-  }
   
   return cleaned || 'No preview available';
 }

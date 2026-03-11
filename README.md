@@ -23,6 +23,18 @@ This starts a local server (typically at http://localhost:8888) where you can te
 
 ### Testing the API Locally
 
+Use the test scripts in the `tests/` directory:
+
+```bash
+# Test both endpoints (requires curl and jq)
+./tests/test-local.sh
+
+# Or test programmatically with Node.js
+node tests/test-local.js
+```
+
+Manual curl commands also work:
+
 ```bash
 # Test endpoint
 curl http://localhost:8888/.netlify/functions/test
