@@ -28,6 +28,12 @@
   status = 200
   force = true
 
+[[redirects]]
+  from = "/api/chat"
+  to = "/.netlify/functions/chat"
+  status = 200
+  force = true
+
 # Default redirect to test endpoint for root path
 [[redirects]]
   from = "/"

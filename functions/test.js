@@ -15,22 +15,36 @@ exports.handler = async (event, context) => {
     statusCode: 200,
     headers,
     body: JSON.stringify({
-      message: 'api-tmfarrell.netlify.app',
+      name: 'API Functions for tmfarrell.github.io',
+      description: 'Semantic search and AI-powered chat API',
       timestamp: new Date().toISOString(),
       environment: {
-        hasApiKey: !!process.env.PINECONE_API_KEY,
+        hasPinecone: !!process.env.PINECONE_API_KEY,
         hasIndex: !!process.env.PINECONE_INDEX,
-        nodeVersion: process.version,
-        apiKeyLength: process.env.PINECONE_API_KEY ? process.env.PINECONE_API_KEY.length : 0,
+        hasAnthropic: !!process.env.ANTHROPIC_API_KEY,
         indexName: process.env.PINECONE_INDEX || 'not-set'
       },
       endpoints: {
         search: '/.netlify/functions/search',
+        searchAlt: '/api/search',
+        chat: '/.netlify/functions/chat',
+        chatAlt: '/api/chat',
         test: '/.netlify/functions/test'
       },
-      usage: {
-        search_endpoint: 'POST /.netlify/functions/search with JSON body: {"query": "your search text"}',
-        example: 'curl -X POST https://api-tmfarrell.netlify.app/.netlify/functions/search -H "Content-Type: application/json" -d \'{"query": "data science"}\''
+      examples: {
+        search: {
+          method: 'POST',
+          endpoint: '/api/search',
+          body: { query: 'your search text' },
+          curl: 'curl -X POST https://api-tmfarrell.netlify.app/api/search -H "Content-Type: application/json" -H "Origin: https://tmfarrell.github.io" -d \'{"query": "data science"}\''
+        },
+        chat: {
+          method: 'POST',
+          endpoint: '/api/chat',
+          body: { query: 'your question' },
+          curl: 'curl -X POST https://api-tmfarrell.netlify.app/api/chat -H "Content-Type: application/json" -H "Origin: https://tmfarrell.github.io" -d \'{"query": "What is Tims background?"}\'',
+          rateLimit: '10 requests per minute per IP'
+        }
       }
     })
   };

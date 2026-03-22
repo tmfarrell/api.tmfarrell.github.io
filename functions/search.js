@@ -1,4 +1,5 @@
 const { Pinecone } = require('@pinecone-database/pinecone');
+const { isAllowedOrigin } = require('./constants');
 
 exports.handler = async (event, context) => {
   // Enhanced CORS headers for GitHub Pages integration
@@ -29,6 +30,15 @@ exports.handler = async (event, context) => {
     };
   }
 
+  const origin = event.headers?.origin || event.headers?.Origin || '';
+  if (!isAllowedOrigin(origin)) {
+    return {
+      statusCode: 403,
+      headers,
+      body: JSON.stringify({ error: 'Origin not allowed' })
+    };
+  }
+
   try {
     // Parse and validate request body
     let requestBody;
@@ -43,7 +53,7 @@ exports.handler = async (event, context) => {
     }
 
     const { query } = requestBody;
-    
+
     if (!query || typeof query !== 'string' || query.trim().length === 0) {
       return {
         statusCode: 400,

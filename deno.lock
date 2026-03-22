@@ -11,6 +11,7 @@
   "workspace": {
     "packageJson": {
       "dependencies": [
+        "npm:@anthropic-ai/sdk@0.80",
         "npm:@pinecone-database/pinecone@^7.1.0",
         "npm:dotenv@^17.3.1"
       ]
