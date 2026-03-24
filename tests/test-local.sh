@@ -6,6 +6,7 @@ curl http://localhost:8888/.netlify/functions/test \
 # hit search endpoint 
 echo ""
 echo "Testing search endpoint..."
+echo "Query: portfolio or resume"
 curl -X POST http://localhost:8888/.netlify/functions/search \
   -H "Content-Type: application/json" \
   -H "Origin: http://localhost:4000" \
@@ -15,6 +16,7 @@ curl -X POST http://localhost:8888/.netlify/functions/search \
 # hit chat endpoint
 echo ""
 echo "Testing chat endpoint..."
+echo "Query: What is Tim's background?"
 curl -X POST http://localhost:8888/.netlify/functions/chat \
   -H "Content-Type: application/json" \
   -H "Origin: http://localhost:4000" \

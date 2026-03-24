@@ -131,8 +131,9 @@ exports.handler = async (event, context) => {
     
     const searchResult = await index.namespace(process.env.PINECONE_NAMESPACE).searchRecords({
       query: {
-        topK: 5,
+        topK: 10,
         inputs: { text: query.trim() },
+        filter: { category: { $ne: "reading" } },
         rerank: {
           model: 'pinecone-rerank-v0',
           rankFields: ['text'],
