@@ -1,7 +1,8 @@
 const ALLOWED_ORIGINS = [
   'http://localhost:4000',
   'http://127.0.0.1:4000',
-  'https://tmfarrell.github.io'
+  'https://tmfarrell.github.io', 
+  'http://tmfarrell.github.io'
 ];
 
 function isAllowedOrigin(origin) {
