@@ -1,3 +1,5 @@
+const { resolveModel } = require('../lib/chat-prompt');
+
 // Test endpoint to verify deployment and configuration
 exports.handler = async (event, context) => {
   const headers = {
@@ -22,7 +24,8 @@ exports.handler = async (event, context) => {
         hasPinecone: !!process.env.PINECONE_API_KEY,
         hasIndex: !!process.env.PINECONE_INDEX,
         hasAnthropic: !!process.env.ANTHROPIC_API_KEY,
-        indexName: process.env.PINECONE_INDEX || 'not-set'
+        indexName: process.env.PINECONE_INDEX || 'not-set',
+        chatModel: resolveModel()
       },
       endpoints: {
         search: '/.netlify/functions/search',

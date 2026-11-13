@@ -1,7 +1,16 @@
-const { Pinecone } = require('@pinecone-database/pinecone');
 const Anthropic = require('@anthropic-ai/sdk');
 const { isAllowedOrigin } = require('./constants');
+const { retrieveHits } = require('../lib/retrieval');
+const {
+  MAX_QUERY_CHARS,
+  resolveModel,
+  buildContext,
+  buildChatRequest,
+  finalizeResponse,
+} = require('../lib/chat-prompt');
 
+// Note: this limiter is per function instance (in memory), so it resets on cold starts
+// and isn't shared across instances. See README "Follow-ups".
 const rateLimitMap = new Map();
 
 const RATE_LIMIT_WINDOW_MS = 60000;
@@ -91,7 +100,7 @@ exports.handler = async (event, context) => {
       };
     }
 
-    const { query } = requestBody;
+    const { query, history } = requestBody;
 
     if (!query || typeof query !== 'string' || query.trim().length === 0) {
       return {
@@ -101,11 +110,11 @@ exports.handler = async (event, context) => {
       };
     }
 
-    if (query.trim().length > 500) {
+    if (query.trim().length > MAX_QUERY_CHARS) {
       return {
         statusCode: 400,
         headers,
-        body: JSON.stringify({ error: 'Query is too long. Maximum 500 characters allowed.' })
+        body: JSON.stringify({ error: `Query is too long. Maximum ${MAX_QUERY_CHARS} characters allowed.` })
       };
     }
 
@@ -121,84 +130,32 @@ exports.handler = async (event, context) => {
       };
     }
 
-    const pinecone = new Pinecone({ apiKey: process.env.PINECONE_API_KEY });
-    const index = pinecone.index({ 
-      name: process.env.PINECONE_INDEX, 
-      host: process.env.PINECONE_INDEX_HOST
-    });
+    const trimmedQuery = query.trim();
+    console.log(`[${new Date().toISOString()}] Chat searching for: "${trimmedQuery}"`);
 
-    console.log(`[${new Date().toISOString()}] Chat searching for: "${query.trim()}"`);
-    
-    const searchResult = await index.namespace(process.env.PINECONE_NAMESPACE).searchRecords({
-      query: {
-        topK: 10,
-        inputs: { text: query.trim() },
-        filter: { category: { $ne: "reading" } },
-        rerank: {
-          model: 'pinecone-rerank-v0',
-          rankFields: ['text'],
-          topN: 5,
-        }
-      }
-    });
+    const hits = await retrieveHits(trimmedQuery);
+    const { documents, sources, contextText } = buildContext(hits);
 
-    const hits = searchResult.result?.hits || [];
-    const filteredHits = hits.filter(hit => hit._score > 0.1);
+    console.log(`[${new Date().toISOString()}] Found ${hits.length} relevant results (${contextText.length} context chars)`);
 
-    let contextText = '';
-    if (filteredHits.length > 0) {
-      contextText = filteredHits.map(hit => {
-        const fields = hit.fields || {};
-        const title = fields.title || 'Untitled';
-        const url = fields.url || '#';
-        const content = fields.content_excerpt || fields.text || '';
-        return `Title: ${title}\nURL: ${url}\nContent: ${content}`;
-      }).join('\n\n---\n\n');
-    } else {
-      contextText = 'No relevant context found from the search.';
-    }
-
-    console.log(`[${new Date().toISOString()}] Found ${filteredHits.length} relevant results`);
+    const model = resolveModel();
+    const params = buildChatRequest({ model, query: trimmedQuery, contextText, history });
 
     const anthropic = new Anthropic();
-    const response = await anthropic.messages.stream({
-      model: 'claude-haiku-4-5',
-      max_tokens: 1024,
-      messages: [{
-        role: 'user',
-        content: `You are a helpful assistant answering questions about Tim Farrell's content (tmfarrell.github.io). Use the following context to answer the user's question concisely.
+    const startedAt = Date.now();
+    const message = await anthropic.messages.stream(params).finalMessage();
+    const { text, stopReason, removedLinks } = finalizeResponse(message, documents);
 
-Context from the knowledge base:
-${contextText}
-
-User question: ${query.trim()}
-
-Instructions:
-- Keep your response concise and direct
-- You should answer as if you an expert in the content of tmfarrell.github.io. For example, don't say "Based on the information provided" or "Based on the context provided". Just answer the question.
-- Preserve and include links to relevant pages when appropriate (format as markdown links: [Page Title](URL))
-- If the context doesn't contain enough information to answer, say so but still provide what help you can
-- Be friendly and helpful`
-      }]
-    });
-
-    let fullResponse = '';
-    for await (const event of response) {
-      if (event.type === 'content_block_delta' && event.delta?.text) {
-        fullResponse += event.delta.text;
-      }
-    }
+    console.log(`[${new Date().toISOString()}] model=${model} stop_reason=${stopReason} latency_ms=${Date.now() - startedAt} ` +
+      `input_tokens=${message.usage?.input_tokens} output_tokens=${message.usage?.output_tokens} history_turns=${params.messages.length - 1}` +
+      (removedLinks.length ? ` removed_links=${removedLinks.length}` : ''));
 
     return {
       statusCode: 200,
       headers,
       body: JSON.stringify({ 
-        response: fullResponse.trim(),
-        sources: filteredHits.map(hit => ({
-          title: hit.fields?.title || 'Untitled',
-          url: hit.fields?.url || '#',
-          score: hit._score
-        })),
+        response: text,
+        sources,
         remainingRequests: rateLimitResult.remaining
       })
     };
@@ -206,7 +163,7 @@ Instructions:
   } catch (error) {
     console.error(`[${new Date().toISOString()}] Chat error:`, error);
     
-    if (error.message?.includes('429') || error.status === 429) {
+    if (error.message?.includes('429') || error.status === 429 || error.status === 529) {
       return {
         statusCode: 429,
         headers,
