@@ -4,7 +4,7 @@
 // Usage (needs PINECONE_* and ANTHROPIC_API_KEY in .env; makes paid API calls):
 //   npm run eval                                   # claude-haiku-4-5 vs claude-haiku-5-5
 //   npm run eval -- --models claude-haiku-5-5,claude-sonnet-5-5
-//   npm run eval -- --ids fact-om1,injection-link  # a subset
+//   npm run eval -- --ids fact-om1,fact-resume     # a subset
 //   npm run eval -- --dry-run                      # retrieval + prompt only, no Anthropic calls
 //
 // For each question it retrieves context once from Pinecone, sends the identical request
@@ -93,7 +93,7 @@ async function main() {
 
   for (const q of questions) {
     const t0 = Date.now();
-    const hits = await retrieveHits(q.question);
+    const hits = await retrieveHits(p.buildRetrievalQuery(q.question, q.history));
     const retrievalMs = Date.now() - t0;
     const { documents, sources, contextText } = p.buildContext(hits);
     const sourceSet = new Set(sources.map((s) => p.normalizeUrl(s.url)));

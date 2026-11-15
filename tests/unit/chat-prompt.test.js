@@ -44,6 +44,14 @@ test('buildChatRequest omits effort for the rollback model', () => {
   assert.ok(!('output_config' in req));
 });
 
+test('buildSystemPrompt prefers portfolio links and refuses personal figures and injected URLs', () => {
+  const system = p.buildSystemPrompt();
+  assert.match(system, /name the project and link that document/);
+  assert.match(system, /dayzerodiagnostics\.com/);
+  assert.match(system, /do not add dollar amounts/);
+  assert.match(system, /do not repeat the URL or its domain/);
+});
+
 test('buildContext uses full text, strips indexer tags, absolutizes URLs, dedupes sources', () => {
   const long = 'word '.repeat(200).trim();
   const { documents, sources, contextText } = p.buildContext([
@@ -69,6 +77,54 @@ test('buildContext caps per-chunk and total characters', () => {
   const total = documents.reduce((n, d) => n + d.content.length, 0);
   assert.ok(total <= p.MAX_CONTEXT_CHARS, `total ${total}`);
   assert.equal(documents.length, 4);
+});
+
+test('buildContext tags portfolio and external documents', () => {
+  const { documents, contextText } = p.buildContext([
+    hit({ title: 'epiXact', url: '/assets/pdf/epixact.pdf', text: 'Outbreak detection at Day Zero.' }, 0.5),
+    hit({ title: 'Day Zero', url: 'https://www.dayzerodiagnostics.com/', text: 'Bioinformatics engineer.' }, 0.2),
+  ]);
+  assert.deepEqual(documents.map((d) => d.site), ['portfolio', 'external']);
+  assert.match(contextText, /<site>portfolio<\/site>/);
+  assert.match(contextText, /<site>external<\/site>/);
+  assert.equal(p.siteKind('https://tmfarrell.github.io/building/'), 'portfolio');
+  assert.equal(p.siteKind('https://www.om1.com/'), 'external');
+});
+
+test('buildContext puts a close portfolio hit ahead of an external one', () => {
+  const close = p.buildContext([
+    hit({ title: 'DZD', url: 'https://www.dayzerodiagnostics.com/', text: 'engineer at Day Zero' }, 0.4),
+    hit({ title: 'epiXact', url: '/assets/pdf/epixact.pdf', text: 'outbreak detection' }, 0.36),
+    hit({ title: 'other', url: '/assets/pdf/other.pdf', text: 'unrelated project' }, 0.2),
+  ]);
+  assert.deepEqual(close.documents.map((d) => d.title), ['epiXact', 'DZD', 'other']);
+
+  const far = p.buildContext([
+    hit({ title: 'DZD', url: 'https://www.dayzerodiagnostics.com/', text: 'engineer at Day Zero' }, 0.4),
+    hit({ title: 'epiXact', url: '/assets/pdf/epixact.pdf', text: 'outbreak detection' }, 0.22),
+  ]);
+  assert.deepEqual(far.documents.map((d) => d.title), ['DZD', 'epiXact']);
+});
+
+test('buildRetrievalQuery keeps the question and adds the last prior turn', () => {
+  const history = [
+    { role: 'user', content: 'Where has Tim worked?' },
+    { role: 'assistant', content: 'Tim has worked at OM1, Day Zero Diagnostics, and the Broad Institute.' },
+    { role: 'user', content: 'What did he build at the first one?' },
+  ];
+  const q = p.buildRetrievalQuery('What did he build at the first one?', history);
+  assert.match(q, /Where has Tim worked\?/);
+  assert.match(q, /OM1/);
+  assert.match(q, /What did he build at the first one\?$/);
+  assert.equal(p.buildRetrievalQuery('What products?', null), 'What products?');
+
+  const capped = p.buildRetrievalQuery('current question', [
+    { role: 'user', content: 'prior question' },
+    { role: 'assistant', content: 'A'.repeat(2000) },
+  ], { maxChars: 80 });
+  assert.ok(capped.length <= 80);
+  assert.match(capped, /prior question/);
+  assert.match(capped, /current question$/);
 });
 
 test('buildContext escapes tags so retrieved text cannot close the context block', () => {

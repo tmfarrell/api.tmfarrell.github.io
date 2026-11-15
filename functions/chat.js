@@ -5,6 +5,7 @@ const {
   MAX_QUERY_CHARS,
   resolveModel,
   buildContext,
+  buildRetrievalQuery,
   buildChatRequest,
   finalizeResponse,
 } = require('../lib/chat-prompt');
@@ -131,9 +132,10 @@ exports.handler = async (event, context) => {
     }
 
     const trimmedQuery = query.trim();
+    const searchText = buildRetrievalQuery(trimmedQuery, history);
     console.log(`[${new Date().toISOString()}] Chat searching for: "${trimmedQuery}"`);
 
-    const hits = await retrieveHits(trimmedQuery);
+    const hits = await retrieveHits(searchText);
     const { documents, sources, contextText } = buildContext(hits);
 
     console.log(`[${new Date().toISOString()}] Found ${hits.length} relevant results (${contextText.length} context chars)`);

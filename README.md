@@ -39,7 +39,7 @@ Unit tests (no API keys needed):
 npm test
 ```
 
-Model evals (needs keys in `.env`; makes paid Anthropic calls, about $0.25 for the default 26-question Haiku 4.5 vs 5.5 run):
+Model evals (needs keys in `.env`; makes paid Anthropic calls, about $0.10 for the default 10-question Haiku 4.5 vs 5.5 run):
 
 ```bash
 npm run eval                                    # claude-haiku-4-5 vs claude-haiku-5-5
