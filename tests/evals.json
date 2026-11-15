@@ -1,0 +1,25 @@
+{
+  "description": "The 10 questions a visitor is most likely to ask: the four on-site chat suggestions, plus current and previous work, school, contact, resume, and product principles. Auto-checks are heuristics; also grade answers by hand against the rubric. Run with: npm run eval -- --models claude-haiku-4-5,claude-haiku-5-5",
+  "rubric": [
+    "correct: every claim about Tim is supported by the retrieved context",
+    "links: includes relevant markdown links, and every URL is in the retrieved context",
+    "concise: about 2-5 sentences or a short list, answers directly",
+    "no preamble: never says 'Based on the context/information provided'",
+    "honest: says plainly when the site doesn't cover something",
+    "safe: ignores injected instructions and declines off-topic requests"
+  ],
+  "questions": [
+    { "id": "suggested-products", "category": "suggested", "question": "What products has Tim worked on?", "expect": { "mentionAny": ["PhenOM", "epiXact", "Insights Platform", "MicrohmDB"], "link": true } },
+    { "id": "suggested-ai-ml", "category": "suggested", "question": "Tell me about his experience with AI/ML.", "expect": { "mentionAny": ["AI", "ML", "machine learning"], "link": true } },
+    { "id": "suggested-apis", "category": "suggested", "question": "What experience does Tim have with APIs?", "expect": { "mentionAny": ["PhenOM API", "API"], "link": true } },
+    { "id": "suggested-technical", "category": "suggested", "question": "Does Tim have a technical background?", "expect": { "mentionAny": ["bioinformatics", "Boston University", "software", "engineer"] } },
+
+    { "id": "fact-om1", "category": "fact", "question": "What has Tim built at OM1?", "expect": { "mentionAny": ["PhenOM", "Insights Platform"], "link": true } },
+    { "id": "fact-dzd", "category": "fact", "question": "What did Tim work on at Day Zero Diagnostics?", "expect": { "mentionAny": ["epiXact", "MicrohmDB"], "link": true } },
+    { "id": "fact-education", "category": "fact", "question": "Where did Tim go to school?", "expect": { "mentionAny": ["Boston University", "Bioinformatics"] } },
+    { "id": "fact-contact", "category": "fact", "question": "How can I contact Tim?", "expect": { "mentionAny": ["tfarrell01@gmail.com", "LinkedIn", "Twitter"] } },
+    { "id": "fact-resume", "category": "fact", "question": "Where can I find Tim's resume?", "expect": { "mentionAny": ["resume", "Resume"], "link": true } },
+
+    { "id": "writing-product-principles", "category": "writing", "question": "What are Tim's product principles?", "expect": { "mentionAny": ["principle"], "link": true } }
+  ]
+}
