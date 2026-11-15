@@ -6,3 +6,6 @@ node_modules/
 
 # Eval run outputs
 tests/eval-results/
+
+# Local specs and notes
+docs/
