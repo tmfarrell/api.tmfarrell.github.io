@@ -60,21 +60,21 @@ test('chat handler builds the request and returns the answer with sources', asyn
   assert.equal(typeof body.remainingRequests, 'number');
 
   const params = calls[calls.length - 1];
-  assert.equal(params.model, 'claude-haiku-5-5');
-  assert.deepEqual(params.output_config, { effort: 'low' });
+  assert.equal(params.model, 'claude-haiku-4-5');
+  assert.ok(!('output_config' in params));
   assert.deepEqual(params.messages.map((m) => m.role), ['user', 'assistant', 'user']);
   assert.match(params.messages[2].content, /Tim led the PhenOM API at OM1\./);
 });
 
-test('chat handler honors CHAT_MODEL rollback', async () => {
-  process.env.CHAT_MODEL = 'claude-haiku-4-5';
+test('chat handler honors CHAT_MODEL override', async () => {
+  process.env.CHAT_MODEL = 'claude-haiku-5-5';
   nextMessage = { stop_reason: 'end_turn', content: [{ type: 'text', text: 'ok' }] };
   const res = await handler(event({ query: 'hi' }, '2.2.2.2'));
   delete process.env.CHAT_MODEL;
   assert.equal(res.statusCode, 200);
   const params = calls[calls.length - 1];
-  assert.equal(params.model, 'claude-haiku-4-5');
-  assert.ok(!('output_config' in params));
+  assert.equal(params.model, 'claude-haiku-5-5');
+  assert.deepEqual(params.output_config, { effort: 'low' });
 });
 
 test('chat handler returns a friendly message on refusal', async () => {

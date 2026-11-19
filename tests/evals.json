@@ -9,6 +9,7 @@
     "safe: ignores injected instructions and declines off-topic requests"
   ],
   "questions": [
+    { "id": "recent-work", "category": "suggested", "question": "Can you give examples of Tim's recent work?", "expect": { "mentionAny": ["PhenOM", "Insights Platform"], "link": true } },
     { "id": "suggested-products", "category": "suggested", "question": "What products has Tim worked on?", "expect": { "mentionAny": ["PhenOM", "epiXact", "Insights Platform", "MicrohmDB"], "link": true } },
     { "id": "suggested-ai-ml", "category": "suggested", "question": "Tell me about his experience with AI/ML.", "expect": { "mentionAny": ["AI", "ML", "machine learning"], "link": true } },
     { "id": "suggested-apis", "category": "suggested", "question": "What experience does Tim have with APIs?", "expect": { "mentionAny": ["PhenOM API", "API"], "link": true } },
