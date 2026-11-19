@@ -230,7 +230,10 @@ function sanitizeUrl(url) {
 
 function formatDate(dateString) {
   if (!dateString) return '';
-  
+
+  // Year ranges ("2024-Present", "2014-2016") and bare years are labels, not calendar days.
+  if (!/^\d{4}-\d{2}-\d{2}/.test(dateString)) return dateString;
+
   try {
     const date = new Date(dateString);
     if (isNaN(date.getTime())) return dateString; // Return original if invalid

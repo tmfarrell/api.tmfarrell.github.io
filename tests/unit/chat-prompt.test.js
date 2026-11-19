@@ -69,6 +69,34 @@ test('buildContext uses full text, strips indexer tags, absolutizes URLs, dedupe
   assert.doesNotMatch(contextText, /\[title:|\[Category:|\[Tags:/);
 });
 
+test('buildContext keeps role dates and hides placeholder dates', () => {
+  const { documents, contextText } = p.buildContext([
+    hit({
+      title: 'Senior Product Manager at OM1',
+      url: 'https://www.om1.com/',
+      category: 'experience',
+      date: '2024-Present',
+      text: '[title: Senior Product Manager at OM1] Dates: 2024-Present. Leads clinical AI. [Date: 2024-Present] [Category: experience] [Org: OM1]',
+    }),
+    hit({
+      title: 'Product Management Skills',
+      url: '/',
+      category: 'skills',
+      date: '2026-01-01',
+      text: '[title: Product Management Skills] Roadmap planning [Category: skills]',
+    }),
+  ]);
+  const role = documents.find((d) => d.title.startsWith('Senior Product Manager'));
+  const skills = documents.find((d) => d.title === 'Product Management Skills');
+  assert.equal(role.date, '2024-Present');
+  assert.match(role.content, /Dates: 2024-Present/);
+  assert.match(role.content, /\[Date: 2024-Present\]/);
+  assert.doesNotMatch(role.content, /\[Category:|\[Org:/);
+  assert.equal(skills.date, '');
+  assert.match(contextText, /<date>2024-Present<\/date>/);
+  assert.doesNotMatch(contextText, /<date>2026-01-01<\/date>/);
+});
+
 test('buildContext caps per-chunk and total characters', () => {
   const big = 'a'.repeat(10000);
   const hits = Array.from({ length: 6 }, (_, i) => hit({ title: `T${i}`, url: `/p${i}/`, text: big }));
