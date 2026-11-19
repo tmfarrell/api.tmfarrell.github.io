@@ -135,7 +135,7 @@ exports.handler = async (event, context) => {
     const searchText = buildRetrievalQuery(trimmedQuery, history);
     console.log(`[${new Date().toISOString()}] Chat searching for: "${trimmedQuery}"`);
 
-    const hits = await retrieveHits(searchText);
+    const hits = await retrieveHits(searchText, process.env, { writingQuery: trimmedQuery });
     const { documents, sources, contextText } = buildContext(hits);
 
     console.log(`[${new Date().toISOString()}] Found ${hits.length} relevant results (${contextText.length} context chars)`);

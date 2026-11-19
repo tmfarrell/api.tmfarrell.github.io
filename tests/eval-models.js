@@ -10,8 +10,10 @@
 // For each question it retrieves context once from Pinecone, sends the identical request
 // (built by lib/chat-prompt.js, same as production) to every model, and records the answer,
 // latency, token usage, estimated cost, stop_reason, and whether every URL in the answer is
-// one of the retrieved sources / appears in the retrieved context. Results are written to
-// tests/eval-results/<timestamp>.json and .md (git-ignored) for side-by-side grading.
+// one of the retrieved sources / appears in the retrieved context. Each result also includes
+// the context documents (title, url, content, date, site) that were sent to the model.
+// The JSON stores the full chunk text. The markdown previews each chunk at 400 characters.
+// Results are written to tests/eval-results/<timestamp>.json and .md (git-ignored).
 const fs = require('node:fs');
 const path = require('node:path');
 require('dotenv').config({ path: path.join(__dirname, '..', '.env'), quiet: true });
@@ -31,6 +33,18 @@ const PRICES = {
 };
 
 const NOT_COVERED_RE = /(don't|do not|doesn't|does not|can't|cannot|couldn't|isn't|is not|no) (see|find|have|cover|mention|include|information|details|share|available)|not (covered|mentioned|available|something)|isn't (on|covered)/i;
+
+// Markdown only. The JSON result keeps the full chunk.
+const MD_CONTEXT_PREVIEW_CHARS = 400;
+
+function previewContent(text) {
+  const content = String(text || '');
+  if (content.length <= MD_CONTEXT_PREVIEW_CHARS) return content;
+  const slice = content.slice(0, MD_CONTEXT_PREVIEW_CHARS);
+  const cut = slice.lastIndexOf(' ');
+  const preview = (cut > 280 ? slice.slice(0, cut) : slice).trimEnd();
+  return `${preview}… (${content.length} chars)`;
+}
 const DECLINE_RE = /(can't|cannot|won't|not able to|unable to|outside|beyond|only (help|answer)|here to (help|answer))/i;
 const PREAMBLE_RE = /based on (the )?(context|information|documents?) (provided|given|above)/i;
 
@@ -93,12 +107,12 @@ async function main() {
 
   for (const q of questions) {
     const t0 = Date.now();
-    const hits = await retrieveHits(p.buildRetrievalQuery(q.question, q.history));
+    const hits = await retrieveHits(p.buildRetrievalQuery(q.question, q.history), process.env, { writingQuery: q.question });
     const retrievalMs = Date.now() - t0;
     const { documents, sources, contextText } = p.buildContext(hits);
     const sourceSet = new Set(sources.map((s) => p.normalizeUrl(s.url)));
     const allowed = p.allowedUrlSet(documents);
-    const row = { id: q.id, category: q.category, question: q.question, retrievalMs, sources, contextChars: contextText.length, answers: {} };
+    const row = { id: q.id, category: q.category, question: q.question, retrievalMs, sources, documents, contextChars: contextText.length, answers: {} };
 
     for (const model of args.models) {
       const params = p.buildChatRequest({ model, query: q.question, contextText, history: q.history });
@@ -180,6 +194,14 @@ async function main() {
   }
   for (const r of results) {
     md.push(`## ${r.id} (${r.category})`, '', `**Q:** ${r.question}`, '', `Sources: ${r.sources.map((s) => s.url).join(', ') || 'none'}`, '');
+    if (r.documents?.length) {
+      md.push('### Context', '');
+      r.documents.forEach((d, i) => {
+        md.push(`${i + 1}. **${d.title}** — ${d.url}${d.date ? ` (${d.date})` : ''} [${d.site}]`, '', previewContent(d.content), '');
+      });
+    } else {
+      md.push('### Context', '', '_No documents retrieved._', '');
+    }
     for (const [m, a] of Object.entries(r.answers)) {
       if (a.dryRun) { md.push(`- ${m}: dry run, ${a.historyTurns} history turns, ${a.promptChars} prompt chars`); continue; }
       if (a.error) { md.push(`### ${m}`, '', `ERROR: ${a.error}`, ''); continue; }

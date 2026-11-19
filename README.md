@@ -47,7 +47,7 @@ npm run eval -- --models claude-haiku-5-5,claude-sonnet-5-5
 npm run eval -- --dry-run                       # retrieval + prompt only, no Anthropic calls
 ```
 
-The eval sends the same retrieved context to each model and writes side-by-side answers, latency, tokens, estimated cost, stop reasons, and URL checks to `tests/eval-results/` (git-ignored). Questions live in `tests/evals.json`.
+The eval sends the same retrieved context to each model and writes that context (documents + sources), side-by-side answers, latency, tokens, estimated cost, stop reasons, and URL checks to `tests/eval-results/` (git-ignored). Questions live in `tests/evals.json`.
 
 Manual curl commands also work:
 
@@ -111,7 +111,7 @@ Semantic search endpoint using Pinecone.
 
 ### POST /.netlify/functions/chat
 
-AI-powered chat endpoint using Anthropic's Claude Haiku 5.5 (`claude-haiku-5-5`, effort `low`) by default. It retrieves the top chunks from Pinecone, sends their full text (capped per chunk and in total) with recent conversation history, and returns a concise answer with links. The model may only link to URLs that appear in the retrieved context; any other markdown link is unlinked before the response is returned. Prompt, context, and history building live in `lib/chat-prompt.js`.
+AI-powered chat endpoint using Anthropic's Claude Haiku 4.5 (`claude-haiku-4-5`) by default. For a question about writing, posts, or principles it retrieves 30 chunks and reranks to 20. Other questions search work and writing separately so essays do not crowd out project cards, then keep at most one writing chunk. Either way, one chunk per page is sent (roles that share a company URL are kept), with recent conversation history, and the model returns a concise answer with links. It may only link to URLs that appear in the retrieved context; any other markdown link is unlinked before the response is returned. Prompt, context, and history building live in `lib/chat-prompt.js`. Retrieval lives in `lib/retrieval.js`.
 
 **Request:**
 ```json
@@ -165,11 +165,11 @@ Set these in Netlify dashboard or local `.env` file:
 | `PINECONE_INDEX_HOST` | Pinecone index host URL |
 | `PINECONE_NAMESPACE` | Pinecone namespace (optional) |
 | `ANTHROPIC_API_KEY` | Anthropic API key for chat endpoint |
-| `CHAT_MODEL` | Optional. Overrides the chat model (default `claude-haiku-5-5`). Rollback: `claude-haiku-4-5` |
+| `CHAT_MODEL` | Optional. Overrides the chat model (default `claude-haiku-4-5`). Haiku 5.5: `claude-haiku-5-5` |
 
 ### Changing or rolling back the model
 
-Set `CHAT_MODEL` in the Netlify dashboard and redeploy. To roll back to the previous model, set `CHAT_MODEL=claude-haiku-4-5` (the request automatically omits `effort`, which that model doesn't support). Or redeploy the previous Netlify deploy.
+Set `CHAT_MODEL` in the Netlify dashboard and redeploy. Haiku 4.5 does not accept `effort`, so the request omits it. To use Haiku 5.5, set `CHAT_MODEL=claude-haiku-5-5`.
 
 ### Node version
 
@@ -179,9 +179,9 @@ Functions need Node 22+ (`@anthropic-ai/sdk` 1.x, `@pinecone-database/pinecone` 
 
 - `functions/constants.js` - Shared configuration (allowed origins)
 - `functions/search.js` - Semantic search API endpoint
-- `functions/chat.js` - AI chat API endpoint (Claude Haiku 5.5 by default)
+- `functions/chat.js` - AI chat API endpoint (Claude Haiku 4.5 by default)
 - `lib/chat-prompt.js` - System prompt, context, history, and response handling for chat
-- `lib/retrieval.js` - Pinecone retrieval for chat
+- `lib/retrieval.js` - Pinecone retrieval for chat: rerank, title+URL dedupe, writing quota
 - `tests/unit/` - Unit tests (`npm test`, no keys needed)
 - `tests/evals.json` - Eval questions; `tests/eval-models.js` - model comparison (`npm run eval`)
 - `functions/test.js` - Health check/debug endpoint

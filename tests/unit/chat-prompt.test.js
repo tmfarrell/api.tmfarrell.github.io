@@ -6,11 +6,11 @@ const p = require('../../lib/chat-prompt');
 
 const hit = (fields, score = 0.8) => ({ _score: score, fields });
 
-test('resolveModel defaults to Haiku 5.5 and honors CHAT_MODEL', () => {
-  assert.equal(p.resolveModel({}), 'claude-haiku-5-5');
-  assert.equal(p.resolveModel({ CHAT_MODEL: '  ' }), 'claude-haiku-5-5');
-  assert.equal(p.resolveModel({ CHAT_MODEL: 'claude-haiku-4-5' }), 'claude-haiku-4-5');
-  assert.equal(p.ROLLBACK_MODEL, 'claude-haiku-4-5');
+test('resolveModel defaults to Haiku 4.5 and honors CHAT_MODEL', () => {
+  assert.equal(p.resolveModel({}), 'claude-haiku-4-5');
+  assert.equal(p.resolveModel({ CHAT_MODEL: '  ' }), 'claude-haiku-4-5');
+  assert.equal(p.resolveModel({ CHAT_MODEL: 'claude-haiku-5-5' }), 'claude-haiku-5-5');
+  assert.equal(p.ROLLBACK_MODEL, 'claude-haiku-5-5');
 });
 
 test('supportsEffort excludes models that reject the effort parameter', () => {
@@ -39,7 +39,7 @@ test('buildChatRequest: system prompt, effort low, max_tokens 2048, no sampling 
   assert.match(req.messages[0].content, /<question>\nWhat does Tim do\?\n<\/question>/);
 });
 
-test('buildChatRequest omits effort for the rollback model', () => {
+test('buildChatRequest omits effort for Haiku 4.5', () => {
   const req = p.buildChatRequest({ model: 'claude-haiku-4-5', query: 'hi' });
   assert.ok(!('output_config' in req));
 });
@@ -52,19 +52,25 @@ test('buildSystemPrompt prefers portfolio links and refuses personal figures and
   assert.match(system, /do not repeat the URL or its domain/);
 });
 
-test('buildContext uses full text, strips indexer tags, absolutizes URLs, dedupes sources', () => {
+test('buildContext uses full text, strips indexer tags, absolutizes URLs, and keeps one chunk per page', () => {
   const long = 'word '.repeat(200).trim();
   const { documents, sources, contextText } = p.buildContext([
     hit({ title: 'PhenOM API', url: '/building/phenom-api/', text: `[title: PhenOM API] ${long} [Category: portfolio] [Tags: api, AI/ ML]`, content_excerpt: 'short excerpt...' }, 0.9),
     hit({ title: 'PhenOM API', url: '/building/phenom-api/', text: 'second chunk text' }, 0.5),
+    hit({ title: 'Product Manager at Day Zero Diagnostics', url: 'https://www.dayzerodiagnostics.com/', text: 'Led the first commercial offering.' }, 0.45),
+    hit({ title: 'Bioinformatics Engineer at Day Zero Diagnostics', url: 'https://www.dayzerodiagnostics.com/', text: 'Built the data platform.' }, 0.42),
     hit({ title: 'Resume', url: 'https://tmfarrell.github.io/assets/pdf/Tim_Farrell_Resume.pdf', content_excerpt: 'Resume excerpt' }, 0.4),
   ]);
-  assert.equal(documents.length, 3);
+  assert.equal(documents.length, 4);
   assert.equal(documents[0].content, long);
   assert.equal(documents[0].url, 'https://tmfarrell.github.io/building/phenom-api/');
-  assert.equal(documents[2].content, 'Resume excerpt', 'falls back to content_excerpt');
-  assert.equal(sources.length, 2);
-  assert.deepEqual(sources.map((s) => s.score), [0.9, 0.4]);
+  assert.deepEqual(
+    documents.filter((d) => d.url === 'https://www.dayzerodiagnostics.com/').map((d) => d.title),
+    ['Product Manager at Day Zero Diagnostics', 'Bioinformatics Engineer at Day Zero Diagnostics'],
+  );
+  assert.equal(documents.find((d) => d.title === 'Resume').content, 'Resume excerpt', 'falls back to content_excerpt');
+  assert.doesNotMatch(contextText, /second chunk text/);
+  assert.equal(sources.length, 4);
   assert.match(contextText, /<document index="1">/);
   assert.doesNotMatch(contextText, /\[title:|\[Category:|\[Tags:/);
 });
